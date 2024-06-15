@@ -219,4 +219,8 @@ class RuntimeObject {
   }
 };
 
+// Compatibility wrapper to provide an int8 ptr regardless of whether LLVM
+// opaque pointer is enabled or not.
+llvm::PointerType *getInt8PtrTy(llvm::LLVMContext &ctx);
+
 }  // namespace taichi::lang

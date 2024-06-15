@@ -3,8 +3,8 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/IRBuilder.h"
 
+#include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #include "taichi/ir/ir.h"
-#include "taichi/struct/struct.h"
 #include "taichi/util/file_sequence_writer.h"
 
 namespace taichi::lang {
@@ -104,14 +104,14 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     // mutex
     aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),
                                     snode.max_num_elements());
-    body_type = llvm::ArrayType::get(llvm::PointerType::getInt8PtrTy(*ctx),
-                                     snode.max_num_elements());
+    body_type =
+        llvm::ArrayType::get(getInt8PtrTy(*ctx), snode.max_num_elements());
   } else if (type == SNodeType::dynamic) {
     // mutex and n (number of elements)
     aux_type =
         llvm::StructType::get(*ctx, {llvm::PointerType::getInt32Ty(*ctx),
                                      llvm::PointerType::getInt32Ty(*ctx)});
-    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
+    body_type = getInt8PtrTy(*ctx);
   } else {
     TI_P(snode.type_name());
     TI_NOT_IMPLEMENTED;
@@ -207,9 +207,8 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
     auto inp_type =
         llvm::PointerType::get(get_llvm_element_type(module.get(), parent), 0);
 
-    auto ft =
-        llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx_),
-                                {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
+    auto ft = llvm::FunctionType::get(getInt8PtrTy(*llvm_ctx_),
+                                      {getInt8PtrTy(*llvm_ctx_)}, false);
 
     auto func = create_function(ft, snode.get_ch_from_parent_func_name());
 
@@ -228,8 +227,7 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
                              tlctx_->get_constant(parent->child_id(&snode))},
                             "getch");
 
-    builder.CreateRet(
-        builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx_)));
+    builder.CreateRet(builder.CreateBitCast(ret, getInt8PtrTy(*llvm_ctx_)));
   }
 
   for (auto &ch : snode.ch) {

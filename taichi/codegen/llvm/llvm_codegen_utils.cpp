@@ -29,7 +29,12 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
     return false;
   }
   if (a->isPointerTy()) {
+#if LLVM_VERSION_MAJOR >= 16
+    return llvm::cast<llvm::PointerType>(a)->hasSameElementTypeAs(
+        llvm::cast<llvm::PointerType>(b));
+#else
     return is_same_type(a->getPointerElementType(), b->getPointerElementType());
+#endif
   }
   if (a->isFunctionTy() != b->isFunctionTy()) {
     return false;
@@ -142,6 +147,14 @@ void check_func_call_signature(llvm::FunctionType *func_type,
                type_name(required), type_name(provided));
     }
   }
+}
+
+llvm::PointerType *getInt8PtrTy(llvm::LLVMContext &ctx) {
+#if LLVM_VERSION_MAJOR >= 16
+  return llvm::PointerType::getUnqual(ctx);
+#else
+  return llvm::PointerType::getInt8PtrTy(ctx);
+#endif
 }
 
 }  // namespace taichi::lang

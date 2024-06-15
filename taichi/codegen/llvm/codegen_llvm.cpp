@@ -1471,12 +1471,20 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
 
   {
     int bits = data_type_bits(type);
+#if LLVM_VERSION_MAJOR < 16
     llvm::PointerType *typeIntPtr = get_integer_ptr_type(bits);
+#endif
     llvm::IntegerType *typeIntTy = get_integer_type(bits);
 
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
+
+    // In opaque pointer mode, the type of the destination doesn't matter, so we
+    // don't need to do anything with `dest`.
+#if LLVM_VERSION_MAJOR < 16
     dest = builder->CreateBitCast(dest, typeIntPtr);
+#endif
+
     auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
         dest, builder->CreateBitCast(old_val, typeIntTy),
         builder->CreateBitCast(new_val, typeIntTy), llvm::MaybeAlign(0),
@@ -1678,11 +1686,9 @@ llvm::Value *TaskCodeGenLLVM::call(
     const std::vector<llvm::Value *> &arguments) {
   auto prefix = get_runtime_snode_name(snode);
   auto s = emit_struct_meta(snode);
-  auto s_ptr =
-      builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
+  auto s_ptr = builder->CreateBitCast(s, getInt8PtrTy(*llvm_context));
 
-  node_ptr =
-      builder->CreateBitCast(node_ptr, llvm::Type::getInt8PtrTy(*llvm_context));
+  node_ptr = builder->CreateBitCast(node_ptr, getInt8PtrTy(*llvm_context));
 
   std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
 
@@ -1838,11 +1844,11 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
     auto offset = tlctx->get_constant(bit_offset);
     llvm_val[stmt] = create_bit_ptr(llvm_val[stmt->input_ptr], offset);
   } else {
-    auto ch = call_struct_func(
-        stmt->output_snode->get_snode_tree_id(),
-        stmt->output_snode->get_ch_from_parent_func_name(),
-        builder->CreateBitCast(llvm_val[stmt->input_ptr],
-                               llvm::PointerType::getInt8PtrTy(*llvm_context)));
+    auto ch =
+        call_struct_func(stmt->output_snode->get_snode_tree_id(),
+                         stmt->output_snode->get_ch_from_parent_func_name(),
+                         builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                                                getInt8PtrTy(*llvm_context)));
     llvm_val[stmt] = builder->CreateBitCast(
         ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
                                        module.get(), stmt->output_snode),
@@ -2436,8 +2442,7 @@ void TaskCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
   auto alloca = create_entry_block_alloca(type, sizeof(int64));
-  llvm_val[stmt] = builder->CreateBitCast(
-      alloca, llvm::PointerType::getInt8PtrTy(*llvm_context));
+  llvm_val[stmt] = builder->CreateBitCast(alloca, getInt8PtrTy(*llvm_context));
   call("stack_init", llvm_val[stmt]);
 }
 
@@ -2629,7 +2634,7 @@ llvm::Value *TaskCodeGenLLVM::get_tls_base_ptr() {
 }
 
 llvm::Type *TaskCodeGenLLVM::get_tls_buffer_type() {
-  return llvm::Type::getInt8PtrTy(*llvm_context);
+  return getInt8PtrTy(*llvm_context);
 }
 
 std::vector<llvm::Type *> TaskCodeGenLLVM::get_xlogue_argument_types() {
@@ -2652,6 +2657,7 @@ llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
                                  get_mesh_xlogue_argument_types(), false);
 }
 
+#if LLVM_VERSION_MAJOR < 16
 llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
   switch (bits) {
     case 8:
@@ -2668,6 +2674,7 @@ llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
   TI_ERROR("No compatible " + std::to_string(bits) + " bits integer ptr type.");
   return nullptr;
 }
+#endif
 
 llvm::IntegerType *TaskCodeGenLLVM::get_integer_type(int bits) {
   switch (bits) {
