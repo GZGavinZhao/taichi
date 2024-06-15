@@ -61,9 +61,9 @@ RUN set -x && \
     add-apt-repository -y ppa:git-core/ppa && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421 && \
     . /etc/lsb-release && \
-    echo "deb http://apt.llvm.org/$DISTRIB_CODENAME/ llvm-toolchain-$DISTRIB_CODENAME-14 main" > /etc/apt/sources.list.d/llvm-14.list && \
+    echo "deb http://apt.llvm.org/$DISTRIB_CODENAME/ llvm-toolchain-$DISTRIB_CODENAME-15 main" > /etc/apt/sources.list.d/llvm-15.list && \
     apt update && \
-    apt install -y build-essential clang-14 clang-tidy-14 llvm-14 lld-14 gcc-11 g++-11 curl wget sudo python3-pip git unzip && \
+    apt install -y build-essential clang-15 clang-tidy-15 llvm-15 lld-15 gcc-11 g++-11 curl wget sudo python3-pip git unzip && \
     python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip && \
     pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip install -U cmake && \
@@ -72,10 +72,10 @@ RUN set -x && \
     rm /usr/bin/ld && ln -sf /usr/bin/mold /usr/bin/ld && \
     rm -rf /var/cache/apt/archives /var/lib/apt/lists && \
     ln -sf /usr/bin/python3 /usr/bin/python && \
-    ln -sf /usr/bin/clang-14 /usr/bin/clang && \
-    ln -sf /usr/bin/clang++-14 /usr/bin/clang++ && \
-    ln -sf /usr/bin/lld-14 /usr/bin/lld && \
-    ln -sf /usr/bin/ld.lld-14 /usr/bin/ld.lld && \
+    ln -sf /usr/bin/clang-15 /usr/bin/clang && \
+    ln -sf /usr/bin/clang++-15 /usr/bin/clang++ && \
+    ln -sf /usr/bin/lld-15 /usr/bin/lld && \
+    ln -sf /usr/bin/ld.lld-15 /usr/bin/ld.lld && \
     true
 
 # mold version is not special, just the latest one at the time of writing
