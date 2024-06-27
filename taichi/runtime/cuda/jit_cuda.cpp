@@ -184,7 +184,9 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   b.LoopVectorize = false;
   b.SLPVectorize = false;
 
+#if LLVM_VERSION_MAJOR < 16
   target_machine->adjustPassManager(b);
+#endif
 
   b.populateFunctionPassManager(function_pass_manager);
   b.populateModulePassManager(module_pass_manager);

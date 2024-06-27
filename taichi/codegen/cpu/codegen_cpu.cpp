@@ -290,7 +290,9 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
   b.LoopVectorize = true;
   b.SLPVectorize = true;
 
+#if LLVM_VERSION_MAJOR < 16
   target_machine->adjustPassManager(b);
+#endif
 
   b.populateFunctionPassManager(function_pass_manager);
   b.populateModulePassManager(module_pass_manager);
