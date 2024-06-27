@@ -274,17 +274,26 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
       new_func->setComdat(f->getComdat());
       f->getParent()->getFunctionList().insert(f->getIterator(), new_func);
       new_func->takeName(f);
+#if LLVM_VERSION_MAJOR >= 16
+      new_func->splice(new_func->begin(), f);
+#else
       new_func->getBasicBlockList().splice(new_func->begin(),
                                            f->getBasicBlockList());
+#endif
+
       for (llvm::Function::arg_iterator I = f->arg_begin(), E = f->arg_end(),
                                         I2 = new_func->arg_begin();
            I != E; ++I, ++I2) {
         if (I->getType()->getTypeID() == llvm::Type::PointerTyID) {
-          auto &front_bb = new_func->getBasicBlockList().front();
+          auto &front_bb = new_func->front();
           llvm::Instruction *addrspacecast =
               new AddrSpaceCastInst(I2, I->getType());
+#if LLVM_VERSION_MAJOR >= 16
+          addrspacecast->insertInto(&front_bb, front_bb.getFirstInsertionPt());
+#else
           front_bb.getInstList().insertAfter(front_bb.getFirstInsertionPt(),
                                              addrspacecast);
+#endif
           I->replaceAllUsesWith(addrspacecast);
           I2->takeName(&*I);
         } else {
